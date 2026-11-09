@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="guestbook">
+<title>star guestbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Poppins:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --pink: #ffb8e6; }
+  html, body { margin: 0; height: 100%; background: #0a0a0c; overflow: hidden;
+    font-family: 'Poppins', system-ui, sans-serif; color: #fff; -webkit-user-select: none; user-select: none; }
+  #video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); background: #000; }
+  #shade { position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 75% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,.5) 100%), rgba(0,0,0,.2); }
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  header { position: fixed; top: 20px; left: 0; right: 0; text-align: center; pointer-events: none;
+    text-shadow: 0 2px 14px rgba(0,0,0,.55); z-index: 3; }
+  h1 { margin: 0; font-family: 'Bagel Fat One', 'Poppins', sans-serif; font-weight: 400;
+    font-size: clamp(26px, 4.6vw, 46px); line-height: 1.15; }
+  h1 .tw { color: var(--pink); font-size: .6em; vertical-align: .25em; margin: 0 .25em; }
+  .sub { margin-top: 2px; font: 400 clamp(12px, 1.6vw, 14px) 'Space Mono', monospace; opacity: .8; letter-spacing: .04em; }
+
+  .btns { position: fixed; top: 18px; right: 18px; display: flex; gap: 10px; z-index: 5; }
+  .btn { width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35);
+    background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    color: #fff; font-size: 21px; cursor: pointer; display: grid; place-items: center; padding: 0; transition: transform .15s; }
+  .btn:hover { transform: scale(1.06); }
+  .btn:disabled { opacity: .45; cursor: default; transform: none; }
+
+  #poses { position: fixed; bottom: 98px; left: 16px; right: 16px; z-index: 3; display: flex; justify-content: center;
+    gap: 10px; flex-wrap: wrap; pointer-events: none; }
+  .pose { font: 400 13px 'Space Mono', monospace; padding: 6px 12px; border-radius: 999px;
+    background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.18); transition: background .2s, transform .2s; }
+  .pose.on { background: rgba(255,184,230,.35); border-color: var(--pink); transform: scale(1.08); }
+  #status { position: fixed; top: 92px; left: 0; right: 0; text-align: center; z-index: 3; pointer-events: none;
+    font: 400 14px 'Space Mono', monospace; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+
+  #shootBtn { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 5;
+    font: 600 18px 'Poppins', sans-serif; padding: 14px 34px; border-radius: 999px; border: 0; cursor: pointer;
+    color: #1a1030; background: linear-gradient(135deg, #f4f4ff 0%, #c9c9e0 30%, #ffffff 50%, #b8b8d4 70%, #ffd6f0 100%);
+    box-shadow: 0 8px 30px rgba(0,0,0,.35), inset 0 1px 0 #fff; transition: transform .15s; }
+  #shootBtn:hover { transform: translateX(-50%) scale(1.05); }
+  #shootBtn:disabled { opacity: .5; cursor: default; transform: translateX(-50%); }
+
+  #count { position: fixed; inset: 0; display: grid; place-items: center; z-index: 8; pointer-events: none;
+    font-family: 'Bagel Fat One', sans-serif; color: var(--pink); font-size: min(34vw, 260px);
+    text-shadow: 0 6px 40px rgba(0,0,0,.5); opacity: 0; }
+  #count.show { animation: pop 1s ease-out; }
+  @keyframes pop { 0% { opacity: 0; transform: scale(1.5); } 20% { opacity: 1; transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: scale(.9); } }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 9; }
+  #flash.go { animation: flash .7s ease-out; }
+  @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+  #start { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 35%, #24222b 0%, #121117 60%, #08080a 100%); text-align: center; }
+  #startFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #start > div { position: relative; }
+  #start h2 { margin: 0 0 6px; font-family: 'Bagel Fat One', sans-serif; font-weight: 400; font-size: clamp(36px, 8vw, 68px); }
+  #start .sub { margin-bottom: 22px; }
+  #start p { max-width: 470px; margin: 0 auto 26px; opacity: .88; line-height: 1.6; font-size: 15px; }
+  .deco { font-size: 22px; margin-bottom: 14px; letter-spacing: 6px; color: var(--pink); }
+  #enable { font: 600 17px 'Poppins', sans-serif; padding: 14px 30px; border-radius: 999px; border: 0; cursor: pointer;
+    color: #1a1030; background: linear-gradient(135deg, #f4f4ff 0%, #c9c9e0 30%, #ffffff 50%, #b8b8d4 70%, #ffd6f0 100%);
+    box-shadow: 0 8px 30px rgba(255,170,230,.35), inset 0 1px 0 #fff; }
+  #enable:disabled { opacity: .6; cursor: default; }
+  #startMsg { margin-top: 16px; min-height: 22px; font-size: 14px; opacity: .85; }
+
+  .overlay { position: fixed; inset: 0; z-index: 15; background: rgba(10,10,14,.88);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  #result { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 16px; }
+  #stripImg { max-height: calc(100vh - 130px); max-width: 100%; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    animation: rise .5s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .pill { font: 600 16px 'Poppins', sans-serif; padding: 12px 24px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.08); color: #fff; }
+  .pill.main { border: 0; color: #1a1030; background: linear-gradient(135deg, #fff, #ffd6f0); }
+  .pill:disabled { opacity: .5; cursor: default; }
+  #savedMsg { font: 400 15px 'Space Mono', monospace; color: var(--pink); }
+
+  #album { overflow-y: auto; padding: 24px 16px 40px; }
+  .albumHead { max-width: 1100px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: space-between; }
+  .albumHead h3 { margin: 0; font: 400 clamp(24px, 4vw, 34px) 'Bagel Fat One', sans-serif; }
+  #albumCount { font: 400 15px 'Space Mono', monospace; opacity: .7; }
+  #albumGrid { max-width: 1100px; margin: 0 auto; display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .card { display: flex; flex-direction: column; gap: 8px; }
+  .card img { width: 100%; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .card .meta { display: flex; justify-content: space-between; align-items: center; font: 400 12px 'Space Mono', monospace; opacity: .85; }
+  .card .meta button { background: none; border: 0; color: #fff; cursor: pointer; font-size: 15px; padding: 2px 4px; opacity: .8; }
+  #albumEmpty { text-align: center; margin-top: 18vh; font: 400 15px 'Space Mono', monospace; opacity: .7; }
+  #design { max-width: 1100px; margin: 0 auto 26px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px;
+    background: rgba(255,255,255,.04); }
+  #design summary { cursor: pointer; padding: 14px 18px; font: 600 15px 'Poppins', sans-serif; list-style: none; }
+  #design summary::-webkit-details-marker { display: none; }
+  #design summary .muted { font: 400 12px 'Space Mono', monospace; opacity: .6; margin-left: 8px; }
+  .designBody { display: flex; gap: 24px; padding: 4px 18px 18px; flex-wrap: wrap; align-items: flex-start; }
+  .designCtl { flex: 1 1 280px; display: flex; flex-direction: column; gap: 14px; }
+  .themes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .theme { font: 600 14px 'Poppins', sans-serif; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.06); color: #fff; }
+  .theme.sel { background: #fff; color: #1a1030; border-color: #fff; }
+  .designCtl label { display: flex; flex-direction: column; gap: 6px; font: 400 12px 'Space Mono', monospace; opacity: .9; }
+  .designCtl input { font: 400 15px 'Poppins', sans-serif; padding: 10px 12px; border-radius: 10px; color: #fff;
+    border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.3); -webkit-user-select: text; user-select: text; }
+  #designPreview { width: 150px; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .card img { cursor: zoom-in; transition: transform .15s; }
+  .card img:hover { transform: scale(1.02); }
+  .card .cc { opacity: .75; margin-left: 6px; }
+
+  #viewer { z-index: 16; display: flex; gap: 28px; padding: 28px; align-items: center; justify-content: center; }
+  #viewerImg { max-height: calc(100vh - 56px); max-width: min(48vw, 560px); border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: rise .35s ease-out; }
+  .viewSide { width: min(380px, 40vw); max-height: calc(100vh - 56px); display: flex; flex-direction: column; gap: 14px; }
+  .viewTop { display: flex; justify-content: space-between; align-items: center; }
+  #viewDate { font: 400 13px 'Space Mono', monospace; opacity: .75; }
+  .viewSide h4 { margin: 0; font: 400 22px 'Bagel Fat One', sans-serif; }
+  #comments { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+  .cmt { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px 12px; position: relative; }
+  .cmt b { font-size: 13px; color: var(--pink); }
+  .cmt time { font: 400 11px 'Space Mono', monospace; opacity: .55; margin-left: 6px; }
+  .cmt p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .cmt button { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: #fff; opacity: .4; cursor: pointer; }
+  .cmt button:hover { opacity: .9; }
+  #noComments { font: 400 13px 'Space Mono', monospace; opacity: .55; }
+  .cmtForm { display: flex; flex-direction: column; gap: 8px; }
+  .cmtForm input, .cmtForm textarea { font: 400 14px 'Poppins', sans-serif; padding: 10px 12px; border-radius: 10px; color: #fff;
+    border: 1px solid rgba(255,255,255,.25); background: rgba(0,0,0,.3); -webkit-user-select: text; user-select: text; resize: none; }
+  .cmtForm .pill { align-self: flex-end; padding: 9px 20px; font-size: 14px; }
+  @media (max-width: 760px) {
+    #viewer { flex-direction: column; overflow-y: auto; justify-content: flex-start; padding: 70px 16px 24px; gap: 18px; }
+    #viewerImg { max-width: 100%; max-height: 60vh; }
+    .viewSide { width: 100%; max-height: none; }
+  }
+  .hidden { display: none !important; }
+
+  @media (max-width: 640px) {
+    header { top: 78px; } #status { top: 150px; }
+    .btns { top: 14px; right: 14px; } .btn { width: 44px; height: 44px; font-size: 19px; }
+    .pose { font-size: 11px; padding: 5px 9px; }
+  }
+</style>
+</head>
+<body>
+  <video id="video" playsinline muted autoplay></video>
+  <div id="shade"></div>
+  <canvas id="fx"></canvas>
+
+  <header>
+    <h1><span class="tw">⋆</span>star guestbook<span class="tw">⋆</span></h1>
+    <div class="sub">@mmijeekim</div>
+  </header>
+  <div id="status"></div>
+
+  <div class="btns">
+    <button class="btn" id="soundBtn" title="Sound on/off">🔊</button>
+    <button class="btn" id="albumBtn" title="Guestbook">📖</button>
+  </div>
+
+  <div id="poses">
+    <span class="pose" data-g="v">✌️ stars</span>
+    <span class="pose" data-g="heart">🫰 hearts</span>
+    <span class="pose" data-g="palm">✋ sparkles</span>
+    <span class="pose" data-g="both">🫶 big burst</span>
+  </div>
+  <button id="shootBtn">✩ take 2 shots</button>
+
+  <div id="count"></div>
+  <div id="flash"></div>
+
+  <div id="result" class="overlay hidden">
+    <img id="stripImg" alt="your 2-shot strip">
+    <div class="actions">
+      <button class="pill" id="retakeBtn">↺ retake</button>
+      <button class="pill main" id="saveBtn">✩ save to guestbook</button>
+    </div>
+    <div id="savedMsg" class="hidden"></div>
+  </div>
+
+  <div id="album" class="overlay hidden">
+    <div class="albumHead">
+      <h3>our guestbook <span id="albumCount"></span></h3>
+      <button class="btn" id="albumClose" title="Close">✕</button>
+    </div>
+    <details id="design">
+      <summary>🎨 strip design <span class="muted">for the host · change it with the seasons</span></summary>
+      <div class="designBody">
+        <div class="designCtl">
+          <div class="themes" id="themeList"></div>
+          <label>title on the strip <input id="titleIn" maxlength="28"></label>
+          <label>small line under it (leave empty = date of the visit) <input id="subIn" maxlength="40"></label>
+        </div>
+        <img id="designPreview" alt="strip preview">
+      </div>
+    </details>
+    <div id="albumGrid"></div>
+    <div id="albumEmpty" class="hidden">no visitors yet — be the first ✩</div>
+  </div>
+
+  <div id="viewer" class="overlay hidden">
+    <img id="viewerImg" alt="guest strip">
+    <div class="viewSide">
+      <div class="viewTop"><span id="viewDate"></span><button class="btn" id="viewClose" title="Close">✕</button></div>
+      <h4>comments ✩</h4>
+      <div id="comments"></div>
+      <div id="noComments">no comments yet — leave the first one!</div>
+      <div class="cmtForm">
+        <input id="cmtName" maxlength="20" placeholder="your name (optional)">
+        <textarea id="cmtText" rows="3" maxlength="300" placeholder="write a comment…"></textarea>
+        <button class="pill main" id="cmtPost">post ✩</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="start">
+    <canvas id="startFx"></canvas>
+    <div>
+      <div class="deco">⋆｡˚ ✩ ˚｡⋆</div>
+      <h2>star guestbook</h2>
+      <div class="sub">@mmijeekim</div>
+      <p>welcome! strike a pose — ✌️ 🫰 ✋ 🫶<br>
+         stars pop out in the color of your outfit,<br>and your 2-shot strip stays in our guestbook ✩</p>
+      <button id="enable">✩ Start</button>
+      <div id="startMsg"></div>
+    </div>
+  </div>
+
+<script type="module">
+import { FilesetResolver, HandLandmarker, PoseLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+
+const $ = id => document.getElementById(id);
+const video = $('video'), fx = $('fx'), ctx = fx.getContext('2d');
+
+// ---------- layout ----------
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  fx.width = Math.round(W * DPR); fx.height = Math.round(H * DPR);
+}
+addEventListener('resize', resize); resize();
+
+// object-fit: cover mapping; landmarks are in un-mirrored video space, screen is mirrored like a selfie
+function mapping() {
+  const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh);
+  return { vw, vh, s, ox: (W - vw * s) / 2, oy: (H - vh * s) / 2 };
+}
+const toScreen = (p, m) => [W - (m.ox + p.x * m.vw * m.s), m.oy + p.y * m.vh * m.s];
+
+// ---------- models (start loading right away) ----------
+let hands = null, pose = null;
+const modelsReady = (async () => {
+  const files = await FilesetResolver.forVisionTasks(WASM);
+  const make = async (Task, opts) => {
+    try { return await Task.createFromOptions(files, { ...opts, baseOptions: { ...opts.baseOptions, delegate: 'GPU' } }); }
+    catch { return await Task.createFromOptions(files, { ...opts, baseOptions: { ...opts.baseOptions, delegate: 'CPU' } }); }
+  };
+  [hands, pose] = await Promise.all([
+    make(HandLandmarker, { baseOptions: { modelAssetPath: HAND_MODEL }, runningMode: 'VIDEO', numHands: 4,
+      minHandDetectionConfidence: 0.4, minHandPresenceConfidence: 0.4, minTrackingConfidence: 0.4 }),
+    make(PoseLandmarker, { baseOptions: { modelAssetPath: POSE_MODEL }, runningMode: 'VIDEO', numPoses: 3 }),
+  ]);
+})();
+
+// ---------- outfit color (chest area below the shoulders) ----------
+const SN = 32;
+const samp = document.createElement('canvas'); samp.width = samp.height = SN;
+const sctx = samp.getContext('2d', { willReadFrequently: true });
+const warmHue = (r, g, b) => r - b <= 0 ? 0 : 60 * (g - b) / (r - b);
+function isSkin(r, g, b) {
+  if (!(r >= g && g >= b) || r < 50) return false;
+  const sat = (r - b) / r;
+  return (r - b) > 18 && sat > 0.12 && sat < 0.68 && (r - g) > 6 && warmHue(r, g, b) < 34;
+}
+const Q = 6, hist = new Uint16Array(Q*Q*Q), hr = new Uint32Array(Q*Q*Q), hg = new Uint32Array(Q*Q*Q), hb = new Uint32Array(Q*Q*Q);
+function outfitColor(ls, rs, m) {
+  const { vw, vh } = m;
+  const x1 = ls.x * vw, y1 = ls.y * vh, x2 = rs.x * vw, y2 = rs.y * vh;
+  const sw = Math.hypot(x1 - x2, y1 - y2);
+  if (sw < 20) return null;
+  // centre of the chest, narrow enough to skip hair falling over the shoulders
+  const w = sw * 0.5, cx = (x1 + x2) / 2;
+  const rx0 = Math.max(0, cx - w / 2), ry0 = Math.max(0, (y1 + y2) / 2 + sw * 0.18);
+  const rw = Math.min(w, vw - rx0), rh = Math.min(sw * 0.55, vh - ry0);
+  if (rw < 8 || rh < 6) return null;
+  sctx.drawImage(video, rx0, ry0, rw, rh, 0, 0, SN, SN);
+  const d = sctx.getImageData(0, 0, SN, SN).data;
+  hist.fill(0); hr.fill(0); hg.fill(0); hb.fill(0);
+  let used = 0;
+  for (let j = 0; j < d.length; j += 4) {
+    const r = d[j], g = d[j+1], b = d[j+2];
+    if (isSkin(r, g, b)) continue;
+    const k = ((r * Q) >> 8) * Q * Q + ((g * Q) >> 8) * Q + ((b * Q) >> 8);
+    hist[k]++; hr[k] += r; hg[k] += g; hb[k] += b; used++;
+  }
+  let best = 0;
+  for (let k = 1; k < hist.length; k++) if (hist[k] > hist[best]) best = k;
+  const n = hist[best];
+  if (used < SN * SN * 0.2 || n < used * 0.12) return null;
+  return { r: hr[best] / n, g: hg[best] / n, b: hb[best] / n };
+}
+
+// people: one per detected body, with a smoothed outfit color
+let people = [];
+function updatePeople(list, m, now, sample) {
+  for (const pl of list) {
+    const ls = pl[11], rs = pl[12];
+    if ((ls.visibility ?? 1) < 0.4 || (rs.visibility ?? 1) < 0.4) continue;
+    const a = toScreen(ls, m), b = toScreen(rs, m);
+    const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2, sw = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    let p = null, bd = Math.max(160, sw) ** 2;
+    for (const q of people) { const dd = (q.cx - cx) ** 2 + (q.cy - cy) ** 2; if (dd < bd) { bd = dd; p = q; } }
+    if (!p) { p = { cx, cy, sw, r: 0, g: 0, b: 0, has: false, alpha: 0 }; people.push(p); }
+    p.cx += (cx - p.cx) * 0.4; p.cy += (cy - p.cy) * 0.4; p.sw += (sw - p.sw) * 0.4; p.seen = now;
+    if (sample || !p.has) {
+      const c = outfitColor(ls, rs, m);
+      if (c) {
+        if (!p.has) { Object.assign(p, c); p.has = true; }
+        else { p.r += (c.r - p.r) * 0.3; p.g += (c.g - p.g) * 0.3; p.b += (c.b - p.b) * 0.3; }
+      }
+    }
+  }
+  people = people.filter(p => now - p.seen < 1200);
+}
+function personNear(x, y) {
+  let best = null, bd = Infinity;
+  for (const p of people) {
+    if (!p.has) continue;
+    const dd = (p.cx - x) ** 2 + (p.cy - y) ** 2;
+    if (dd < bd) { bd = dd; best = p; }
+  }
+  return best;
+}
+const hex = t => '#' + [t.r, t.g, t.b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+
+// ---------- pose (gesture) recognition from hand landmarks ----------
+function handInfo(lm, m) {
+  const P = i => [lm[i].x * m.vw, lm[i].y * m.vh];
+  const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const w = P(0), size = d(w, P(9));
+  if (size < 12) return null;
+  const ext = [[8, 6], [12, 10], [16, 14], [20, 18]].map(([t, p]) => d(w, P(t)) > d(w, P(p)) * 1.12);
+  const thumbOut = d(P(4), P(9)) > size * 0.75;
+  let g = null;
+  if (ext[0] && ext[1] && ext[2] && ext[3] && thumbOut) g = 'palm';
+  else if (ext[0] && ext[1] && !ext[2] && !ext[3]) g = 'v';
+  else if (!ext[1] && !ext[2] && !ext[3] && d(P(4), P(8)) < size * 0.4 && P(8)[1] < P(5)[1] && P(4)[1] < P(2)[1]) g = 'heart';
+  return { g, size, P, d };
+}
+function twoHandHeart(a, b) {
+  // index tips touch on top, thumb tips touch below
+  const s = (a.size + b.size) / 2;
+  const it = a.d(a.P(8), b.P(8)), th = a.d(a.P(4), b.P(4));
+  return it < s * 0.6 && th < s * 0.7 && a.P(8)[1] < a.P(4)[1] && b.P(8)[1] < b.P(4)[1];
+}
+
+// debounce: a pose must hold for a few frames before it fires
+const slots = new Map();
+function stable(key, g) {
+  let s = slots.get(key);
+  if (!s) { s = { g: null, n: 0, on: false }; slots.set(key, s); }
+  if (g === s.g) s.n++; else { s.g = g; s.n = 1; }
+  const wasOn = s.on;
+  s.on = !!g && s.n >= 3;
+  return { on: s.on, onset: s.on && !wasOn, g: s.g };
+}
+
+const activeNow = new Set();
+let emitAcc = new Map();
+function handleHands(res, m, dt) {
+  activeNow.clear();
+  const list = (res.landmarks || []).map(lm => ({ lm, info: handInfo(lm, m) })).filter(h => h.info);
+  const usedInPair = new Set();
+
+  // two-hand heart first
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+    if (usedInPair.has(i) || usedInPair.has(j)) continue;
+    if (!twoHandHeart(list[i].info, list[j].info)) continue;
+    usedInPair.add(i); usedInPair.add(j);
+  }
+  const pairs = [...usedInPair];
+  const both = stable('both', pairs.length >= 2 ? 'both' : null);
+  if (both.on && pairs.length >= 2) {
+    const [a, b] = [list[pairs[0]], list[pairs[1]]];
+    const pts = [a.lm[8], b.lm[8], a.lm[4], b.lm[4]].map(p => toScreen(p, m));
+    const cx = pts.reduce((s, p) => s + p[0], 0) / 4, cy = pts.reduce((s, p) => s + p[1], 0) / 4;
+    const col = personNear(cx, cy);
+    activeNow.add('both');
+    emit('both', both.onset, dt, () => spawn(Math.random() < 0.5 ? 'heart' : 'star', cx, cy, col, true, 1.3), both.onset ? 40 : 0, 30);
+    if (both.onset) arp([0, 2, 4, 7, 9, 12]);
+  }
+
+  list.forEach((h, i) => {
+    const st = stable('h' + i, usedInPair.has(i) ? null : h.info.g);
+    if (!st.on) return;
+    activeNow.add(st.g);
+    const S = k => toScreen(h.lm[k], m);
+    const col = personNear(...S(0));
+    if (st.g === 'v') {
+      emit('h' + i, st.onset, dt, () => { const p = S(Math.random() < 0.5 ? 8 : 12); spawn('star', p[0], p[1], col, false); }, 16, 20);
+    } else if (st.g === 'heart') {
+      emit('h' + i, st.onset, dt, () => { const a = S(4), b = S(8); spawn('heart', (a[0]+b[0])/2, (a[1]+b[1])/2, col, false); }, 14, 16);
+    } else if (st.g === 'palm') {
+      emit('h' + i, st.onset, dt, () => { const a = S(0), b = S(9); spawn('sparkle', (a[0]+b[0])/2, (a[1]+b[1])/2, col, true); }, 16, 18);
+    }
+    if (st.onset) arp(st.g === 'v' ? [0, 4, 7] : st.g === 'heart' ? [4, 7, 12] : [7, 9, 12]);
+  });
+
+  document.querySelectorAll('.pose').forEach(el => el.classList.toggle('on', activeNow.has(el.dataset.g)));
+}
+function emit(key, onset, dt, make, burst, rate) {
+  if (onset) for (let k = 0; k < burst; k++) make();
+  const acc = (emitAcc.get(key) || 0) + dt * rate;
+  let a = acc;
+  while (a >= 1) { a -= 1; make(); }
+  emitAcc.set(key, a);
+}
+
+// ---------- particles: stars / hearts / sparkles ----------
+const MAX_PARTS = 130;
+const PASTEL = [[255,107,139], [255,209,102], [123,223,242], [178,141,255], [142,240,168]];
+let parts = [];
+function tint(p) {
+  let [r, g, b] = p ? [p.r, p.g, p.b] : PASTEL[(Math.random() * PASTEL.length) | 0];
+  const L = (0.299*r + 0.587*g + 0.114*b) / 255;
+  if (L < 0.2) [r, g, b] = [150, 150, 156];          // black outfits -> grey so stars stay visible
+  const k = Math.random() * 0.35;                    // a little lighter/darker variety
+  return `rgb(${(r + (255 - r) * k) | 0},${(g + (255 - g) * k) | 0},${(b + (255 - b) * k) | 0})`;
+}
+function spawn(type, x, y, person, wide, big = 1) {
+  if (parts.length >= MAX_PARTS) return;
+  const ang = -Math.PI / 2 + (Math.random() - 0.5) * (wide ? Math.PI * 1.7 : Math.PI * 0.9);
+  const sp = (wide ? 120 + Math.random() * 170 : 70 + Math.random() * 100) * big;
+  const size = (16 + Math.random() * 30) * (big > 1 ? 1.2 : 1);
+  parts.push({
+    type, x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+    rot: (Math.random() - 0.5) * 0.8, vr: (Math.random() - 0.5) * 2, size,
+    age: 0, life: 1.3 + Math.random() * 0.8, color: tint(person), hollow: type !== 'sparkle' && Math.random() < 0.25,
+  });
+  if (Math.random() < 0.15) chime(size);
+}
+function drawStar(c, x, y, r, rot, hollow = false) {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 ? r * 0.45 : r, a = rot - Math.PI / 2 + i * Math.PI / 5;
+    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+    i ? c.lineTo(px, py) : c.moveTo(px, py);
+  }
+  c.closePath(); finish(c, r, hollow);
+}
+function drawHeart(c, x, y, r, rot, hollow = false) {
+  c.save(); c.translate(x, y); c.rotate(rot * 0.4);
+  c.beginPath();
+  c.moveTo(0, r * 0.85);
+  c.bezierCurveTo(-r * 1.25, -r * 0.05, -r * 0.6, -r * 1.05, 0, -r * 0.4);
+  c.bezierCurveTo(r * 0.6, -r * 1.05, r * 1.25, -r * 0.05, 0, r * 0.85);
+  c.closePath(); finish(c, r, hollow);
+  c.restore();
+}
+function drawSparkle(c, x, y, r, rot) {
+  c.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const rr = i % 2 ? r * 0.26 : r, a = rot + i * Math.PI / 4;
+    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+    i ? c.lineTo(px, py) : c.moveTo(px, py);
+  }
+  c.closePath(); c.fill();
+}
+function finish(c, r, hollow) {
+  if (hollow) { c.lineWidth = Math.max(1.5, r * 0.18); c.lineJoin = 'round'; c.stroke(); } else c.fill();
+}
+function drawPart(c, p) {
+  const k = p.age / p.life;
+  c.globalAlpha = Math.min(1, p.age / 0.12) * (1 - k * k);
+  c.fillStyle = c.strokeStyle = p.color;
+  const r = p.size / 2 * (1 - 0.25 * k);
+  if (p.type === 'heart') drawHeart(c, p.x, p.y, r, p.rot, p.hollow);
+  else if (p.type === 'sparkle') drawSparkle(c, p.x, p.y, r, p.rot);
+  else drawStar(c, p.x, p.y, r, p.rot, p.hollow);
+}
+
+// ---------- sound: clear music-box chimes ----------
+let actx = null, master = null, soundOn = true, lastNote = 0;
+function initAudio() {
+  if (actx) return;
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    master = actx.createGain(); master.gain.value = 0.2;
+    const delay = actx.createDelay(); delay.delayTime.value = 0.19;
+    const fb = actx.createGain(); fb.gain.value = 0.16;
+    const wet = actx.createGain(); wet.gain.value = 0.2;
+    master.connect(actx.destination);
+    master.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(wet); wet.connect(actx.destination);
+  } catch { actx = null; }
+}
+const PENTA = [0, 2, 4, 7, 9];
+function note(semi, when, amp) {
+  const f = 1046.5 * Math.pow(2, semi / 12);
+  for (const [mult, g, dec] of [[1, 1, 1.8], [2, 0.12, 0.3], [4, 0.04, 0.1]]) {
+    const o = actx.createOscillator(), gn = actx.createGain();
+    o.type = 'sine'; o.frequency.value = f * mult;
+    gn.gain.setValueAtTime(0, when);
+    gn.gain.linearRampToValueAtTime(amp * g, when + 0.002);
+    gn.gain.exponentialRampToValueAtTime(0.0001, when + dec);
+    o.connect(gn); gn.connect(master); o.start(when); o.stop(when + dec + 0.05);
+  }
+}
+function chime(size = 15) {
+  if (!soundOn || !actx) return;
+  const now = actx.currentTime;
+  if (now - lastNote < 0.12) return;
+  lastNote = now;
+  const deg = Math.floor(Math.random() * 9);
+  note(PENTA[deg % 5] + 12 * Math.floor(deg / 5), now, 0.35 + (size / 30) * 0.4);
+}
+function arp(semis) {
+  if (!soundOn || !actx) return;
+  const t = actx.currentTime;
+  semis.forEach((s, i) => note(s, t + i * 0.07, 0.55));
+  lastNote = t + semis.length * 0.07;
+}
+
+// ---------- main loop ----------
+let last = performance.now(), lastVT = -1, frameNo = 0;
+function frame() {
+  requestAnimationFrame(frame);
+  const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+
+  if (hands && video.readyState >= 2 && video.videoWidth && video.currentTime !== lastVT) {
+    lastVT = video.currentTime; frameNo++;
+    const m = mapping();
+    try {
+      if (frameNo % 2 === 0) updatePeople(pose.detectForVideo(video, now).landmarks || [], m, now, frameNo % 6 === 0);
+      handleHands(hands.detectForVideo(video, now), m, dt);
+    } catch (e) { console.warn(e); }
+    $('status').textContent = people.length ? '' : 'step back a little so the camera can see your outfit ✩';
+  }
+
+  for (const p of people) p.alpha += ((p.has ? 1 : 0) - p.alpha) * Math.min(1, dt * 6);
+  for (const p of parts) {
+    p.age += dt;
+    const drag = Math.max(0, 1 - 1.8 * dt);
+    p.vx *= drag; p.vy = p.vy * drag - 25 * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+  }
+  parts = parts.filter(p => p.age < p.life);
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  for (const p of parts) drawPart(ctx, p);
+  ctx.globalAlpha = 1;
+  for (const p of people) drawColorTag(ctx, p);
+}
+
+// small "your color" tag on the chest
+function drawColorTag(c, p) {
+  if (!p.has || p.alpha < 0.05) return;
+  const label = hex(p);
+  c.globalAlpha = p.alpha;
+  c.font = '700 13px "Space Mono", monospace';
+  const tw = c.measureText(label).width, chip = 14, pad = 6, bw = pad + chip + 6 + tw + pad + 2, bh = 24;
+  const x = Math.max(4, Math.min(W - bw - 4, p.cx - bw / 2));
+  const y = Math.max(4, Math.min(H - 150, p.cy + p.sw * 0.35));
+  c.fillStyle = 'rgba(0,0,0,.55)'; roundRect(c, x, y, bw, bh, 6); c.fill();
+  c.fillStyle = `rgb(${p.r|0},${p.g|0},${p.b|0})`; roundRect(c, x + pad, y + (bh - chip) / 2, chip, chip, 3); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText(label, x + pad + chip + 6, y + bh / 2 + 1);
+  c.globalAlpha = 1;
+}
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+// ---------- start screen: stars falling in many colors ----------
+const sfx = $('startFx'), sc = sfx.getContext('2d');
+const RAIN = ['#FF6B8B', '#FFD166', '#7BDFF2', '#B28DFF', '#8EF0A8', '#FF9F5A', '#FFFFFF'];
+let rain = [], rainOn = true, rainLast = performance.now();
+function newDrop(anyY) {
+  return { x: Math.random() * W, y: anyY ? Math.random() * H : -30 - Math.random() * 60,
+    vy: 40 + Math.random() * 70, vx: (Math.random() - 0.5) * 20, rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 1.6,
+    size: 9 + Math.random() * 21, color: RAIN[(Math.random() * RAIN.length) | 0], hollow: Math.random() < 0.3,
+    alpha: 0.55 + Math.random() * 0.45, type: Math.random() < 0.2 ? 'heart' : 'star' };
+}
+for (let i = 0; i < 45; i++) rain.push(newDrop(true));
+function rainFrame() {
+  if (!rainOn) return;
+  requestAnimationFrame(rainFrame);
+  const now = performance.now(), dt = Math.min(0.05, (now - rainLast) / 1000); rainLast = now;
+  if (sfx.width !== fx.width || sfx.height !== fx.height) { sfx.width = fx.width; sfx.height = fx.height; }
+  sc.setTransform(DPR, 0, 0, DPR, 0, 0); sc.clearRect(0, 0, W, H);
+  for (let i = 0; i < rain.length; i++) {
+    const d = rain[i];
+    d.x += d.vx * dt; d.y += d.vy * dt; d.rot += d.vr * dt;
+    if (d.y > H + 30) rain[i] = newDrop(false);
+    sc.globalAlpha = d.alpha; sc.fillStyle = sc.strokeStyle = d.color;
+    (d.type === 'heart' ? drawHeart : drawStar)(sc, d.x, d.y, d.size / 2, d.rot, d.hollow);
+  }
+  sc.globalAlpha = 1;
+}
+requestAnimationFrame(rainFrame);
+
+// ---------- start ----------
+$('enable').addEventListener('click', async () => {
+  const btn = $('enable'), msg = $('startMsg');
+  btn.disabled = true;
+  initAudio(); actx && actx.resume();
+  try {
+    msg.textContent = 'starting camera…';
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+    msg.textContent = 'loading pose tracker…';
+    await modelsReady;
+    $('start').classList.add('hidden'); rainOn = false;
+    requestAnimationFrame(frame);
+  } catch (e) {
+    console.error(e);
+    btn.disabled = false;
+    msg.textContent = (e && e.name === 'NotAllowedError')
+      ? 'camera permission was blocked. please allow camera access and try again.'
+      : 'could not start: ' + (e && e.message ? e.message : e);
+  }
+});
+
+$('soundBtn').addEventListener('click', () => {
+  soundOn = !soundOn;
+  $('soundBtn').textContent = soundOn ? '🔊' : '🔇';
+  if (soundOn) { initAudio(); actx && actx.resume(); }
+});
+
+// ---------- photo booth: 2 shots → strip ----------
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let shooting = false, lastStrip = null;
+
+$('shootBtn').addEventListener('click', async () => {
+  if (shooting || !video.videoWidth) return;
+  shooting = true; $('shootBtn').disabled = true; $('albumBtn').disabled = true;
+  const shots = [], colors = [];
+  for (let k = 0; k < 2; k++) {
+    $('shootBtn').textContent = `✩ shot ${k + 1} of 2 — pose!`;
+    await countdown();
+    const shot = grabShot();
+    shots.push(shot.canvas); colors.push(...shot.colors);
+    flash(); tick(1760);
+    await sleep(k === 0 ? 1300 : 600);
+  }
+  $('shootBtn').textContent = '✩ take 2 shots';
+  lastStrip = buildStrip(shots, colors);
+  $('stripImg').src = lastStrip.toDataURL('image/jpeg', 0.92);
+  $('saveBtn').disabled = false; $('savedMsg').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  shooting = false; $('shootBtn').disabled = false; $('albumBtn').disabled = false;
+});
+
+async function countdown() {
+  const cnt = $('count');
+  for (const n of [3, 2, 1]) {
+    cnt.textContent = n; cnt.classList.remove('show'); void cnt.offsetWidth; cnt.classList.add('show');
+    tick(n === 1 ? 1320 : 880);
+    await sleep(1000);
+  }
+  cnt.classList.remove('show');
+}
+function flash() { const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+function tick(f) {
+  if (!soundOn || !actx) return;
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.frequency.value = f; o.type = 'triangle';
+  g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.15);
+}
+
+// one frame: 4:3 crop from the middle of the screen — mirrored video + particles (no tags)
+const SHOT_W = 1424, SHOT_H = 1068;
+function grabShot() {
+  const c = document.createElement('canvas'); c.width = SHOT_W; c.height = SHOT_H;
+  const g = c.getContext('2d');
+  let cw = W, ch = W * 3 / 4;
+  if (ch > H) { ch = H; cw = H * 4 / 3; }
+  const cx = (W - cw) / 2, cy = (H - ch) / 2, k = SHOT_W / cw;
+  g.setTransform(k, 0, 0, k, -cx * k, -cy * k);
+  const m = mapping();
+  g.save(); g.translate(W, 0); g.scale(-1, 1);
+  g.drawImage(video, m.ox, m.oy, m.vw * m.s, m.vh * m.s);
+  g.restore();
+  g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, 0, W, H);
+  for (const p of parts) drawPart(g, p);
+  g.globalAlpha = 1;
+  const colors = people.filter(p => p.has).map(p => tint(p));
+  return { canvas: c, colors };
+}
+
+// ---------- seasonal strip themes (host picks in 📖 → strip design) ----------
+const THEMES = {
+  classic:   { name: '✩ classic',  paper: '#f7f4ef', ink: '#1f1d24', sub: '#8a8590', title: 'star guestbook',
+               deco: ['star', 'heart'], pal: null },
+  spring:    { name: '🌸 spring',   paper: '#fdeef2', ink: '#b2456e', sub: '#c98aa2', title: 'spring visit',
+               deco: ['flower', 'heart', 'flower'], pal: ['#ff9ec4', '#ffc4d9', '#ffe27a', '#a9dc8f'] },
+  summer:    { name: '🌊 summer',   paper: '#e3f4fa', ink: '#1d5f86', sub: '#5f9fbf', title: 'summer days',
+               deco: ['sparkle', 'star'], pal: ['#2fa3d6', '#ffcf3d', '#ff7a6b', '#7fd6e8'] },
+  autumn:    { name: '🍂 autumn',   paper: '#f3e5d2', ink: '#7a3b16', sub: '#a8774f', title: 'autumn visit',
+               deco: ['leaf', 'leaf', 'star'], pal: ['#d9622b', '#e8a33d', '#a8452a', '#c98b2e'] },
+  winter:    { name: '❄️ winter',   paper: '#1f2a44', ink: '#ffffff', sub: '#a9b8d6', title: 'winter nights',
+               deco: ['snow', 'star', 'snow'], pal: ['#ffffff', '#cfe3ff', '#a9c8ff'] },
+  holiday:   { name: '🎄 holiday',  paper: '#a51f2c', ink: '#ffffff', sub: '#f3c9cd', title: 'merry christmas',
+               deco: ['snow', 'star'], pal: ['#ffffff', '#ffd166', '#5fbf7f'] },
+  birthday:  { name: '🎂 party',    paper: '#fff6d9', ink: '#5b2a86', sub: '#9a7bb8', title: 'party time!',
+               deco: ['star', 'heart', 'sparkle'], pal: ['#ff6b8b', '#7bdff2', '#b28dff', '#ffb347'] },
+};
+const stripDate = () => { const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`; };
+let design = { theme: 'classic', title: '', sub: '' };
+try { Object.assign(design, JSON.parse(localStorage.getItem('gb-design') || '{}')); } catch {}
+if (!THEMES[design.theme]) design.theme = 'classic';
+function saveDesign() { try { localStorage.setItem('gb-design', JSON.stringify(design)); } catch {} }
+
+function drawFlower(c, x, y, r, rot, paper) {
+  for (let i = 0; i < 5; i++) {
+    const a = rot + i * Math.PI * 2 / 5;
+    c.beginPath(); c.arc(x + Math.cos(a) * r * 0.5, y + Math.sin(a) * r * 0.5, r * 0.45, 0, Math.PI * 2); c.fill();
+  }
+  const f = c.fillStyle; c.fillStyle = paper;
+  c.beginPath(); c.arc(x, y, r * 0.22, 0, Math.PI * 2); c.fill(); c.fillStyle = f;
+}
+function drawLeaf(c, x, y, r, rot) {
+  c.save(); c.translate(x, y); c.rotate(rot + 0.6);
+  c.beginPath(); c.moveTo(0, -r);
+  c.bezierCurveTo(r * 0.8, -r * 0.5, r * 0.7, r * 0.5, 0, r);
+  c.bezierCurveTo(-r * 0.7, r * 0.5, -r * 0.8, -r * 0.5, 0, -r);
+  c.fill(); c.restore();
+}
+function drawSnow(c, x, y, r, rot) {
+  c.save(); c.translate(x, y); c.rotate(rot); c.lineWidth = Math.max(1.5, r * 0.16); c.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    c.rotate(Math.PI / 3);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -r);
+    c.moveTo(0, -r * 0.55); c.lineTo(-r * 0.25, -r * 0.78); c.moveTo(0, -r * 0.55); c.lineTo(r * 0.25, -r * 0.78);
+    c.stroke();
+  }
+  c.restore();
+}
+function drawDeco(c, type, x, y, r, rot, hollow, paper) {
+  if (type === 'heart') drawHeart(c, x, y, r, rot, hollow);
+  else if (type === 'flower') drawFlower(c, x, y, r, rot, paper);
+  else if (type === 'leaf') drawLeaf(c, x, y, r, rot);
+  else if (type === 'snow') drawSnow(c, x, y, r, rot);
+  else if (type === 'sparkle') drawSparkle(c, x, y, r, rot);
+  else drawStar(c, x, y, r, rot, hollow);
+}
+
+// vertical 2-cut strip, like a photo-booth print, in the host's chosen theme
+function buildStrip(shots, colors) {
+  const T = THEMES[design.theme];
+  const PW = 712, PH = 534, PAD = 44, GAP = 24, FOOT = 210;
+  const SW = PW + PAD * 2, SH = PAD + PH * 2 + GAP + FOOT;
+  const c = document.createElement('canvas'); c.width = SW * 2; c.height = SH * 2;
+  const g = c.getContext('2d'); g.scale(2, 2);
+  g.fillStyle = T.paper; g.fillRect(0, 0, SW, SH);
+  shots.forEach((s, i) => {
+    if (s) g.drawImage(s, PAD, PAD + i * (PH + GAP), PW, PH);
+    else { g.fillStyle = 'rgba(128,128,128,.35)'; g.fillRect(PAD, PAD + i * (PH + GAP), PW, PH); }
+  });
+  const fy = PAD + PH * 2 + GAP;
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = T.ink;
+  const title = design.title.trim() || T.title;
+  let fs = 54;
+  g.font = `400 ${fs}px 'Bagel Fat One', Poppins, sans-serif`;
+  while (g.measureText(title).width > SW - 200 && fs > 28) { fs -= 2; g.font = `400 ${fs}px 'Bagel Fat One', Poppins, sans-serif`; }
+  g.fillText(title, SW / 2, fy + 86);
+  g.fillStyle = T.sub;
+  g.font = `400 20px 'Space Mono', monospace`;
+  g.fillText(design.sub.trim() || stripDate(), SW / 2, fy + 140);   // default: the day of the visit
+  // seasonal stickers (classic theme uses the guests' outfit colors)
+  const pal = T.pal || (colors.length ? colors : ['#FF6B8B', '#FFD166', '#7BDFF2', '#B28DFF']);
+  const spots = [[70, 70, 16], [SW - 80, 58, 12], [SW - 62, 118, 20], [96, 150, 11], [SW - 130, 168, 9], [52, 128, 8]];
+  spots.forEach(([x, y, r], i) => {
+    g.fillStyle = g.strokeStyle = pal[i % pal.length];
+    drawDeco(g, T.deco[i % T.deco.length], x, fy + y, r, (i * 0.6) % 1.2, i % 3 === 2, T.paper);
+  });
+  return c;
+}
+
+// host design panel
+function renderDesign() {
+  const list = $('themeList'); list.innerHTML = '';
+  for (const [key, t] of Object.entries(THEMES)) {
+    const b = document.createElement('button');
+    b.className = 'theme' + (key === design.theme ? ' sel' : ''); b.textContent = t.name;
+    b.onclick = () => { design.theme = key; design.title = ''; saveDesign(); renderDesign(); };
+    list.appendChild(b);
+  }
+  $('titleIn').placeholder = THEMES[design.theme].title; $('titleIn').value = design.title;
+  $('subIn').placeholder = stripDate(); $('subIn').value = design.sub;
+  $('designPreview').src = buildStrip([null, null], []).toDataURL('image/jpeg', 0.8);
+}
+$('subIn').addEventListener('input', e => { design.sub = e.target.value; saveDesign(); $('designPreview').src = buildStrip([null, null], []).toDataURL('image/jpeg', 0.8); });
+$('titleIn').addEventListener('input', e => { design.title = e.target.value; saveDesign(); $('designPreview').src = buildStrip([null, null], []).toDataURL('image/jpeg', 0.8); });
+
+$('retakeBtn').addEventListener('click', () => $('result').classList.add('hidden'));
+$('saveBtn').addEventListener('click', async () => {
+  if (!lastStrip) return;
+  $('saveBtn').disabled = true;
+  const blob = await new Promise(r => lastStrip.toBlob(r, 'image/jpeg', 0.92));
+  try {
+    await dbAdd({ blob, created: Date.now() });
+    $('savedMsg').textContent = 'saved! thank you for visiting ✩';
+  } catch (e) {
+    console.error(e);
+    $('savedMsg').textContent = 'could not save on this device — try again';
+    $('saveBtn').disabled = false;
+  }
+  $('savedMsg').classList.remove('hidden');
+  await sleep(1800);
+  $('result').classList.add('hidden');
+});
+
+// ---------- guestbook storage (IndexedDB, stays on this device) ----------
+const dbp = new Promise((res, rej) => {
+  const r = indexedDB.open('star-guestbook', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('strips', { keyPath: 'id', autoIncrement: true });
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+async function dbDo(mode, fn) {
+  const db = await dbp;
+  return new Promise((res, rej) => {
+    const tx = db.transaction('strips', mode), req = fn(tx.objectStore('strips'));
+    tx.oncomplete = () => res(req.result); tx.onerror = () => rej(tx.error);
+  });
+}
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+const dbAdd = rec => dbDo('readwrite', st => st.add(rec));
+const dbAll = () => dbDo('readonly', st => st.getAll());
+const dbDel = id => dbDo('readwrite', st => st.delete(id));
+const dbPut = rec => dbDo('readwrite', st => st.put(rec));
+
+// ---------- album ----------
+let albumUrls = [];
+const fmt = t => { const d = new Date(t), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+async function renderAlbum() {
+  albumUrls.forEach(u => URL.revokeObjectURL(u)); albumUrls = [];
+  const grid = $('albumGrid'); grid.innerHTML = '';
+  const items = (await dbAll()).sort((a, b) => b.created - a.created);
+  $('albumCount').textContent = items.length ? `· ${items.length}` : '';
+  $('albumEmpty').classList.toggle('hidden', items.length > 0);
+  for (const it of items) {
+    const url = URL.createObjectURL(it.blob); albumUrls.push(url);
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = `<img alt="guest strip"><div class="meta"><span></span><span>
+      <button title="Download">⬇</button><button title="Delete">🗑</button></span></div>`;
+    card.querySelector('img').src = url;
+    const n = (it.comments || []).length;
+    card.querySelector('.meta > span').textContent = fmt(it.created) + (n ? `  💬 ${n}` : '');
+    card.querySelector('img').onclick = () => openViewer(it, url);
+    const [dl, del] = card.querySelectorAll('button');
+    dl.onclick = () => { const a = document.createElement('a'); a.href = url;
+      a.download = `star-guestbook-${fmt(it.created).replace(/[. :]/g, '')}.jpg`; a.click(); };
+    del.onclick = async () => { if (confirm('Delete this strip from the guestbook? This can’t be undone.')) { await dbDel(it.id); renderAlbum(); } };
+    grid.appendChild(card);
+  }
+}
+$('albumBtn').addEventListener('click', async () => { renderDesign(); await renderAlbum(); $('album').classList.remove('hidden'); });
+$('albumClose').addEventListener('click', () => $('album').classList.add('hidden'));
+
+// ---------- big view + comments ----------
+let viewing = null;
+function openViewer(it, url) {
+  viewing = it;
+  $('viewerImg').src = url;
+  $('viewDate').textContent = fmt(it.created);
+  $('cmtText').value = '';
+  renderComments();
+  $('viewer').classList.remove('hidden');
+}
+function renderComments() {
+  const list = viewing.comments || [], box = $('comments');
+  box.innerHTML = '';
+  $('noComments').classList.toggle('hidden', list.length > 0);
+  list.forEach((cm, i) => {
+    const el = document.createElement('div'); el.className = 'cmt';
+    el.innerHTML = '<b></b><time></time><p></p><button title="Delete comment">✕</button>';
+    el.querySelector('b').textContent = cm.name || 'guest';
+    el.querySelector('time').textContent = fmt(cm.at);
+    el.querySelector('p').textContent = cm.text;
+    el.querySelector('button').onclick = async () => {
+      if (!confirm('Delete this comment?')) return;
+      viewing.comments.splice(i, 1); await dbPut(viewing); renderComments();
+    };
+    box.appendChild(el);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+async function postComment() {
+  const text = $('cmtText').value.trim();
+  if (!text || !viewing) return;
+  const name = $('cmtName').value.trim();
+  viewing.comments = [...(viewing.comments || []), { name, text, at: Date.now() }];
+  try { await dbPut(viewing); } catch (e) { console.error(e); alert('could not save the comment — try again'); return; }
+  $('cmtText').value = '';
+  renderComments();
+}
+$('cmtPost').addEventListener('click', postComment);
+$('cmtText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); postComment(); } });
+function closeViewer() { $('viewer').classList.add('hidden'); viewing = null; renderAlbum(); }
+$('viewClose').addEventListener('click', closeViewer);
+$('viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && viewing) closeViewer(); });
+</script>
+</body>
+</html>
